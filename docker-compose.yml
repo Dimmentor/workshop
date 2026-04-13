@@ -1,0 +1,52 @@
+services:
+  workshop:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://10.129.0.56:11434}
+      PHOENIX_COLLECTOR_ENDPOINT: ${PHOENIX_COLLECTOR_ENDPOINT:-http://phoenix:4317}
+      PHOENIX_PROJECT_NAME: ${PHOENIX_PROJECT_NAME:-workshop}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:14b}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.1}
+      LLM_NUM_CTX: ${LLM_NUM_CTX:-8192}
+      RECURSION_LIMIT: ${RECURSION_LIMIT:-80}
+
+    networks:
+      - workshop-net
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.8.5
+    ports:
+      - "8080:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://workshop:8000/v1
+      - OPENAI_API_KEY=workshop
+      - ENABLE_PERSISTENT_CONFIG=false
+    depends_on:
+      - workshop
+    volumes:
+      - open-webui-data:/app/backend/data
+    networks:
+      - workshop-net
+
+
+  phoenix:
+    image: arizephoenix/phoenix:version-8.0.0
+    ports:
+      - "6006:6006"
+      - "4317:4317"
+    environment:
+      - PHOENIX_WORKING_DIR=/data
+    volumes:
+      - phoenix-data:/data
+    networks:
+      - workshop-net
+
+volumes:
+  open-webui-data:
+  phoenix-data:
+
+networks:
+  workshop-net:
+    driver: bridge

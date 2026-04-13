@@ -1,0 +1,68 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+*.md
+documentation/
+docs/
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Certbot
+certbot/
+*.pem
+*.key
+*.crt
+
+# Nginx (будут монтироваться как volumes)
+nginx/
+
+# Scripts (не нужны в контейнере)
+scripts/
+
+# Tests
+tests/
+test_*.py
+*_test.py
+
+# Misc
+*.bak
+*.tmp
+*.temp

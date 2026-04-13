@@ -1,0 +1,64 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+.pytest_cache/
+
+# Virtual environment
+.env
+.env.local
+.env.*.local
+.venv/
+venv/
+ENV/
+
+# PyCharm
+.idea
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Development
+.env.development
+.env.test
+
+# Backups
+*.bak
+*.backup
+backup_*.sql
+
+# Locust reports
+reports/
+locust_report*.html
