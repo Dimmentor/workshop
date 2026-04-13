@@ -19,6 +19,8 @@ def build_agent_graph(checkpointer: Optional[Any] = None):
 
     compiled = graph.compile(checkpointer=checkpointer or MemorySaver())
 
-    # print(compiled.get_graph().draw_mermaid())
+    # png_data = compiled.get_graph().draw_mermaid_png()
+    # with open("graph.png", "wb") as f:
+    #     f.write(png_data)
 
     return AgentWorkflow(compiled)
