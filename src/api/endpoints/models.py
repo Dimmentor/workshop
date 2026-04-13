@@ -7,6 +7,7 @@ router = APIRouter()
 
 @router.get("/models", response_model=ModelsList)
 async def list_models():
+    """Необходим для определения приложения как OpenAI-совместимую модель"""
     return ModelsList(
         data=[ModelInfo(id="WATA AI Workshop", created=int(time.time()), owned_by="workshop")]
     )

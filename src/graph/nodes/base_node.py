@@ -9,7 +9,7 @@ tracer = get_tracer(__name__)
 
 
 class BaseNode:
-    """Base class for graph nodes (simplified for single-node version)."""
+    """Базовый класс для узлов с зашитым трейсингом"""
 
     def __init__(
             self,

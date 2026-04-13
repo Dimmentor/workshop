@@ -20,15 +20,14 @@ class GodUseCase(BaseUseCase):
         super().__init__(tools_resolver=tools_resolver, llm_factory=llm_factory, config=config)
 
     def _get_tools(self, state: AgentState) -> List[BaseTool]:
-        """Override to return empty list (no tools for single-node version)."""
+        """В оркестраторе возвращает список доступных инструментов"""
         return []
 
     def _build_system_prompt(self, state: AgentState, tools: List[BaseTool]) -> str:
-        """Override to use configurable system prompt."""
+        """Получить системный промпт"""
         return SYSTEM_PROMPT
 
     async def run(self, state: AgentState, *, stream: bool = False) -> Dict[str, Any]:
-        """Run the single-node usecase with streaming support."""
         messages = list(state.get("messages") or [])
         if not messages:
             return {}

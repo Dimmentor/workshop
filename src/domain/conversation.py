@@ -35,14 +35,9 @@ def resolve_conversation_ids(
     chat_id: Optional[str] = None,
     session_id: Optional[str] = None,
 ) -> ConversationIds:
-    """Resolve conversation IDs safely.
-
-    Policy:
-    - If client provides any id (`thread_id`/`conversation_id`/`chat_id`/`session_id`) -> use it (normalized).
-    - If no id is provided -> start a NEW conversation id.
-
-    IMPORTANT: never fall back to any existing cached id, to avoid cross-chat/user state leakage.
-    OpenWebUI often omits thread_id but repeats session_id — pass session_id for stable checkpoints.
+    """
+    — Если клиент предоставляет какой-либо идентификатор (`thread_id`/`conversation_id`/`chat_id`/`session_id`) — используем его (нормализованный).
+    — Если идентификатор не предоставлен — начинаем НОВЫЙ диалог с использованием идентификатора.
     """
     cid = (conversation_id or "").strip()
     tid = (thread_id or "").strip()
@@ -123,30 +118,28 @@ def build_initial_state(
     """Build initial state for the graph with branch_path restoration."""
     lc_messages: List[BaseMessage] = []
     if openai_messages:
-        # Always pass all messages to maintain conversation context
+        # Передаем все сообщения для сохранения ВСЕГО контекста. TO-DO: придумать оптимальную политику вытеснения.
         lc_messages = to_lc_messages(openai_messages)
 
     state: Dict[str, Any] = {"messages": lc_messages}
-    
-    # Add session_id to state
+
     if thread_id:
         state[STATE_KEY_SESSION_ID] = thread_id
 
-    # Only set branch_path if not already present (from LangGraph checkpoint)
+    # Меняем branch_path, если нету в checkpointer
     if not state.get("branch_path"):
-        # Set from client hints first
+        # Задать из сообщений пользователя
         hint = (client_branch_path or "").strip() or (client_context_branch_path or "").strip()
         if hint:
             state["branch_path"] = hint
             logger.info("Applied client branch_path hint '%s' for thread_id '%s'", hint, thread_id)
         else:
-            # Infer from message history only for new chats (no checkpoint)
             inferred = infer_branch_path_from_openai_messages(openai_messages)
             if inferred:
                 state["branch_path"] = inferred
                 logger.info("Inferred branch_path '%s' from messages for thread_id '%s'", inferred, thread_id)
 
-    # Reset only temporary control flags
+    # Сбросить временные флаги
     if lc_messages:
         for k in CONTROL_KEYS_TO_RESET:
             state[k] = None

@@ -6,4 +6,5 @@ router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
 @router.get("/metrics")
 def metrics():
+    """Последние метрики W-I-P"""
     return {"metrics": get_recent_metrics()}
