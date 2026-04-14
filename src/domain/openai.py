@@ -26,5 +26,7 @@ def last_assistant_content(messages: Sequence[BaseMessage]) -> str:
     for i in range(len(messages) - 1, -1, -1):
         if isinstance(messages[i], AIMessage) and messages[i].content:
             return messages[i].content if isinstance(messages[i].content, str) else str(messages[i].content)
+        if isinstance(messages[i], ToolMessage) and messages[i].content:
+            return messages[i].content if isinstance(messages[i].content, str) else str(messages[i].content)
     return ""
 

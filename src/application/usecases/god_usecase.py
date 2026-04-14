@@ -27,7 +27,7 @@ class GodUseCase(BaseUseCase):
         """Получить системный промпт"""
         return SYSTEM_PROMPT
 
-    async def run(self, state: AgentState, *, stream: bool = False) -> Dict[str, Any]:
+    async def run(self, state: AgentState, *, stream: bool = True) -> Dict[str, Any]:
         messages = list(state.get("messages") or [])
         if not messages:
             return {}

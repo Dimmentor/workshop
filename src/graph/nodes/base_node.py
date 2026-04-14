@@ -1,4 +1,5 @@
 import logging
+from abc import abstractmethod
 from typing import Dict, Optional
 from src.graph.state import AgentState
 from src.application.tooling.tools_resolver import ToolsResolver
@@ -29,6 +30,7 @@ class BaseNode:
         ) as span:
             return await self._execute_logic(state, span)
 
+    @abstractmethod
     async def _execute_logic(self, state: AgentState, span) -> Dict[str, object]:
         """Override in subclasses to implement node-specific logic."""
         raise NotImplementedError

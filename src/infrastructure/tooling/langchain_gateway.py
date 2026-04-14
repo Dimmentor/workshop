@@ -6,7 +6,6 @@ from langchain_core.tools import BaseTool
 from src.application.tooling.gateway import ToolGatewayProtocol
 from src.application.tooling.tools_resolver import ToolsResolver
 from src.domain.exceptions import ToolExecutionError
-from src.infrastructure.observability.tracing import get_tracer
 from src.graph.tools import get_tool_to_server_map
 
 
