@@ -10,8 +10,12 @@ def openai_messages_to_lc(openai_messages: Sequence[Any]) -> List[BaseMessage]:
     """
     out: List[BaseMessage] = []
     for m in openai_messages:
-        role = getattr(m, "role", None)
-        content = getattr(m, "content", None)
+        if isinstance(m, dict):
+            role = m.get("role")
+            content = m.get("content")
+        else:
+            role = getattr(m, "role", None)
+            content = getattr(m, "content", None)
         if role == "system":
             out.append(SystemMessage(content=content or ""))
         elif role == "user":

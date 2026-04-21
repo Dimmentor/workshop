@@ -4,6 +4,7 @@ import uuid
 from opentelemetry import trace
 from src.api.schemas import ChatCompletion, ChatCompletionChoice, \
     ChatCompletionMessage, ChatCompletionUsage
+from src.api.services.llm_queue import llm_slot
 from src.api.services.utils import _build_thread_and_state
 from src.config import settings
 from src.infrastructure.observability.metrics import monitor_model_performance
@@ -19,6 +20,7 @@ class ChatCompletionService:
             body, chat_id_from_header=chat_id_from_header
         )
         model_name = body.model or "graph"
+        base_url = getattr(body, "base_url", None)
 
         span = trace.get_current_span()
         span_ctx = span.get_span_context() if span is not None else None
@@ -28,13 +30,14 @@ class ChatCompletionService:
             span.set_attribute("workshop.stream", False)
             span.set_attribute("workshop.messages.in_count", len(body.messages or []))
 
-        result = await workflow.ainvoke(
-            initial_state,
-            config={
-                "configurable": {"thread_id": thread_id},
-                "recursion_limit": settings.RECURSION_LIMIT,
-            },
-        )
+        async with llm_slot(model=model_name, base_url=base_url):
+            result = await workflow.ainvoke(
+                initial_state,
+                config={
+                    "configurable": {"thread_id": thread_id},
+                    "recursion_limit": settings.RECURSION_LIMIT,
+                },
+            )
 
         monitor_model_performance(
             {**result, "task_type": "chat_completions", "start_time": start_time}

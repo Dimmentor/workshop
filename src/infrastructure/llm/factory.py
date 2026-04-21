@@ -1,7 +1,7 @@
 import json
 import os
 from functools import lru_cache
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 from langchain_core.language_models import BaseChatModel
 from langchain_ollama import ChatOllama
 from src.config import settings
@@ -99,10 +99,13 @@ def _create_llm_instance(
     top_k: int,
     think: bool,
     num_predict: int,
-    use_traced: bool
+    use_traced: bool,
+    *,
+    extra_init: Optional[Dict[str, Any]] = None,
 ) -> BaseChatModel:
     """Create LLM instance with caching - actual LLM creation logic."""
     llm_cls = TracedChatOllama if use_traced else ChatOllama
+    extra_init = extra_init or {}
     return llm_cls(
         model=model,
         base_url=base_url,
@@ -112,6 +115,7 @@ def _create_llm_instance(
         top_p=top_p,
         top_k=top_k,
         options={"num_predict": num_predict, "think": think} if think else {"num_predict": num_predict},
+        **extra_init,
     )
 
 
@@ -119,11 +123,17 @@ def get_llm(
     role: str,
     *,
     base_url: Optional[str] = None,
-    model: Optional[str] = None
+    model: Optional[str] = None,
+    overrides: Optional[Dict[str, Any]] = None,
 ) -> BaseChatModel:
 
-    base_url = base_url or settings.OLLAMA_BASE_URL
-    model = model or settings.LLM_MODEL
+    base_url = (base_url or settings.OLLAMA_BASE_URL)
+    model = (model or settings.LLM_MODEL)
+    if isinstance(model, str):
+        model = model.strip()
+    if not model:
+        # Fail fast with a clear message instead of letting Ollama return 400.
+        raise ValueError("LLM model name is empty. Set request.model or env LLM_MODEL.")
 
     temperature = settings.LLM_TEMPERATURE
     num_ctx = settings.LLM_NUM_CTX
@@ -131,7 +141,54 @@ def get_llm(
     top_p = settings.LLM_TOP_P
     top_k = settings.LLM_TOP_K
     think = settings.LLM_THINK
-    num_predict = settings.LLM_TOP_P
+    num_predict = settings.LLM_NUM_PREDICT
     use_traced = _use_traced_ollama(role)
 
-    return _create_llm_instance(model, base_url, stream, temperature, num_ctx, top_p, top_k, think, num_predict, use_traced)
+    # If request overrides are provided, we create a non-cached instance to avoid
+    # cache explosion and accidental cross-request sharing of params.
+    if overrides:
+        llm_cls = TracedChatOllama if use_traced else ChatOllama
+        init_kwargs = {
+            "model": (overrides.get("model") or model),
+            "base_url": overrides.get("base_url") or base_url,
+        }
+        if isinstance(init_kwargs.get("model"), str):
+            init_kwargs["model"] = init_kwargs["model"].strip()
+        if not init_kwargs.get("model"):
+            raise ValueError("LLM model name is empty after overrides. Set request.model or env LLM_MODEL.")
+        # Only include init args that are explicitly provided (not None)
+        for k in (
+            "reasoning",
+            "validate_model_on_init",
+            "mirostat",
+            "mirostat_eta",
+            "mirostat_tau",
+            "num_ctx",
+            "num_gpu",
+            "num_thread",
+            "num_predict",
+            "repeat_last_n",
+            "repeat_penalty",
+            "temperature",
+            "seed",
+            "stop",
+            "tfs_z",
+            "top_k",
+            "top_p",
+            "format",
+            "keep_alive",
+            "client_kwargs",
+            "async_client_kwargs",
+            "sync_client_kwargs",
+        ):
+            v = overrides.get(k, None)
+            if v is not None:
+                init_kwargs[k] = v
+        # stream is handled by invoke/stream services, but keep it consistent on the instance
+        if overrides.get("stream", None) is not None:
+            init_kwargs["stream"] = bool(overrides["stream"])
+        return llm_cls(**init_kwargs)
+
+    return _create_llm_instance(
+        model, base_url, stream, temperature, num_ctx, top_p, top_k, think, num_predict, use_traced
+    )

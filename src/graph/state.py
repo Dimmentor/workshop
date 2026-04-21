@@ -10,3 +10,5 @@ class AgentState(TypedDict, total=False):
     context: dict = {}
     session_id: str
     branch_path: Optional[str] = None
+    _stream: bool
+    _llm: dict

@@ -61,4 +61,45 @@ def _build_thread_and_state(
     )
     # API-level hint: позволяет узлам выбирать streaming вызовы LLM.
     state["_stream"] = bool(getattr(body, "stream", False))
+
+    # LLM override params (per-request). All fields are optional; None means "use default".
+    # We keep them in state so graph nodes/usecases can access them.
+    raw_model = getattr(body, "model", None)
+    if isinstance(raw_model, str):
+        raw_model = raw_model.strip()
+    # "graph" is a legacy placeholder used by some clients; treat it as "not specified"
+    model_override = None
+    if isinstance(raw_model, str) and raw_model and raw_model.lower() != "graph":
+        model_override = raw_model
+
+    state["_llm"] = {
+        "model": model_override,
+        "base_url": getattr(body, "base_url", None),
+        "reasoning": getattr(body, "reasoning", None),
+        "validate_model_on_init": getattr(body, "validate_model_on_init", None),
+        "format": getattr(body, "format", None),
+        "keep_alive": getattr(body, "keep_alive", None),
+        "client_kwargs": getattr(body, "client_kwargs", None),
+        "async_client_kwargs": getattr(body, "async_client_kwargs", None),
+        "sync_client_kwargs": getattr(body, "sync_client_kwargs", None),
+        "options": getattr(body, "options", None),
+        # option-like fields (used to build options if body.options is not set)
+        "temperature": getattr(body, "temperature", None),
+        "top_p": getattr(body, "top_p", None),
+        "top_k": getattr(body, "top_k", None),
+        "num_ctx": getattr(body, "num_ctx", None),
+        "num_gpu": getattr(body, "num_gpu", None),
+        "num_thread": getattr(body, "num_thread", None),
+        "num_predict": getattr(body, "num_predict", None),
+        "repeat_last_n": getattr(body, "repeat_last_n", None),
+        "repeat_penalty": getattr(body, "repeat_penalty", None),
+        "seed": getattr(body, "seed", None),
+        "stop": getattr(body, "stop", None),
+        "tfs_z": getattr(body, "tfs_z", None),
+        "mirostat": getattr(body, "mirostat", None),
+        "mirostat_eta": getattr(body, "mirostat_eta", None),
+        "mirostat_tau": getattr(body, "mirostat_tau", None),
+        # OpenAI compatibility
+        "max_tokens": getattr(body, "max_tokens", None),
+    }
     return thread_id, state

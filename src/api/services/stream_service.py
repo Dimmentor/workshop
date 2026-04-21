@@ -3,6 +3,7 @@ import uuid
 
 from fastapi.responses import StreamingResponse
 from opentelemetry import trace
+from src.api.services.llm_queue import llm_slot
 from src.api.services.utils import _build_thread_and_state
 from src.api.services.streaming import stream_sse_events
 from src.config import settings
@@ -20,6 +21,7 @@ class ChatStreamService:
         uid = f"chatcmpl-{uuid.uuid4().hex}"
         created = int(time.time())
         model_name = body.model or "graph"
+        base_url = getattr(body, "base_url", None)
 
         span = trace.get_current_span()
         span_ctx = span.get_span_context() if span is not None else None
@@ -34,17 +36,23 @@ class ChatStreamService:
             "recursion_limit": settings.RECURSION_LIMIT,
         }
 
+        async def _queued_events():
+            # Hold the slot for the whole streaming lifecycle.
+            async with llm_slot(model=model_name, base_url=base_url):
+                async for evt in stream_sse_events(
+                    workflow=workflow,
+                    initial_state=initial_state,
+                    config=config,
+                    uid=uid,
+                    created=created,
+                    model_name=model_name,
+                    thread_id=thread_id,
+                    start_time=start_time,
+                ):
+                    yield evt
+
         return StreamingResponse(
-            stream_sse_events(
-                workflow=workflow,
-                initial_state=initial_state,
-                config=config,
-                uid=uid,
-                created=created,
-                model_name=model_name,
-                thread_id=thread_id,
-                start_time=start_time,
-            ),
+            _queued_events(),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache, no-store, must-revalidate",

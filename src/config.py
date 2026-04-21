@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     LLM_THINK: bool = Field(default=False, description="think (Ollama)")
     LLM_NUM_PREDICT: int = Field(default=-1, description="num_predict")
 
+    # Backpressure / queueing to avoid concurrent overload
+    # How many concurrent requests are allowed PER (model, base_url). Usually keep at 1 for fair benchmarking.
+    LLM_MAX_CONCURRENT_REQUESTS: int = Field(default=1, description="Max concurrent LLM requests per model")
+    # If set, a request will wait in queue up to this many seconds; then returns 429.
+    # If empty/None, waits indefinitely.
+    LLM_QUEUE_TIMEOUT_SECONDS: float | None = Field(default=None, description="Queue wait timeout (seconds)")
+
     RECURSION_LIMIT: int = Field(default=80,
                                  description="Максимум шагов графа (assistant/executor/coder/validator) за один запрос.")
 
@@ -60,6 +67,14 @@ class Settings(BaseSettings):
             if not parsed.scheme or not parsed.netloc:
                 raise ValueError('Invalid OLLAMA_BASE_URL format')
         return v
+
+    @field_validator("LLM_MODEL")
+    def validate_llm_model(cls, v: str) -> str:
+        # Empty model name will cause Ollama to fail with "model is required".
+        vv = (v or "").strip()
+        if not vv:
+            raise ValueError("LLM_MODEL must be a non-empty model name (e.g. 'qwen3:14b')")
+        return vv
 
 
 settings = Settings()
