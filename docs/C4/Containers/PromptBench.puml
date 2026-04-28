@@ -1,0 +1,27 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Containers
+
+Person(user, "User")
+
+Container(benchmerge, "BenchMerge", "localhost:8100", "Forms a json array") #1A2C4E
+
+Container(promptbench, "PromptBench", "localhost:8020", "Gateway for batch streams, parses the array and sends it to the workshop")
+
+Container(workshop, "Workshop", "localhost:8000", "Single-node orchestrator analog") #1A2C4E
+
+
+' Внешняя система
+System_Ext(ollama, "llm-01 Ollama", "http://10.129.0.56:11434") #00008B
+
+' Связи
+Rel(user, benchmerge, "uses", "HTTP")
+Rel(benchmerge, promptbench, "POST /gateway/batch/stream (SSE)", "HTTP SSE")
+Rel(promptbench, workshop, "POST /v1/chat/completions", "HTTP SSE")
+Rel(workshop, ollama, "Request to LLM", "HTTP SSE")
+Rel(ollama, workshop, "LLM response", "HTTP SSE")
+Rel(workshop, promptbench, "Returns the result", "HTTP SSE")
+Rel(promptbench, benchmerge, "Sends the result", "HTTP SSE")
+
+@enduml

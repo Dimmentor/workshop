@@ -1,0 +1,39 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Containers
+
+
+' Персона
+Person(user, "User")
+
+' Контейнеры
+
+System_Boundary(benchmerge_system, "BenchMerge") {
+
+    Container(frontend, "BenchMerge Frontend", "localhost:8050", "Web interface")
+
+    Container(backend, "BenchMerge Backend", "localhost:8100", "Sends a json array")
+
+}
+
+
+System(promptbench, "PromptBench", "localhost:8020", "Gateway for batch streams, parses the array and sends it to the workshop") #1A2C4E
+
+System(workshop, "Workshop", "localhost:8000", "Single-node orchestrator analog with monitoring") #1A2C4E
+
+
+' Внешняя система
+System_Ext(ollama, "llm-01 Ollama", "http://10.129.0.56:11434") #00008B
+
+' Связи
+Rel(user, frontend, "uses", "HTTP")
+Rel(frontend, backend, "Websocket connection", "HTTP")
+Rel(backend, promptbench, "POST /gateway/batch/stream (SSE)", "HTTP + Server-Sent Events")
+Rel(promptbench, workshop, "POST /v1/chat/completions", "HTTP")
+Rel(workshop, ollama, "Request to LLM", "HTTP")
+Rel(ollama, workshop, "LLM response", "HTTP")
+Rel(workshop, promptbench, "Returns the result", "HTTP")
+Rel(promptbench, backend, "Sends the result via SSE event", "Server-Sent Events")
+
+@enduml
